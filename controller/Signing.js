@@ -34,7 +34,7 @@ const createManager = async (req, res) => {
             return res.json({ error: "User Phone number already used" });
         }
         const existingN_ID = await Employees.findOne({ where: { nationalId: employee.nationalId } });
-        if (existingPhone) {
+        if (existingN_ID) {
             return res.json({ error: "User National ID number already used" });
         }
 
@@ -54,7 +54,7 @@ const createManager = async (req, res) => {
                 phone: employee.phone,
                 email: employee.email,
                 birthDate: employee.birthDate,
-                status: "INACTIVE",
+                status: employee.status,
                 position: "MANAGER",
                 createDate: employee.createDate,
                 password: hash
