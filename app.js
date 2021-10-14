@@ -8,7 +8,7 @@ app.use(express.json());
 
 //routers
 const employeeManagementRouter = require('./routes/EmpManagement-route');
-app.use('/emp', employeeManagementRouter);
+app.use('/', employeeManagementRouter);
 
 const db = require('./models');
 db.sequelize.sync().then(() => {
