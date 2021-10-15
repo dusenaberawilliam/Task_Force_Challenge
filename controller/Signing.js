@@ -78,15 +78,19 @@ const managerLogin = async (req, res) => {
         if (!employee) {
             return res.json({ error: "user doesn't exist" });
         }
+        if (employee.status !== "ACTIVE") {
+            return res.json({ error: "Your account is not ACTIVE you did CONFIRM ON YOUR EMAIL" });
+        }
         bcrypt.compare(password, employee.password).then((match) => {
             if (!match) {
                 return res.json({ error: "Wrong username or password" });
             }
-            const accessToken = sign({ email: employee.email, code: employee.code, name: employee.name, role: employee.role }, "employeesMgntsys");
-
+            const accessToken = sign({ email: employee.email, code: employee.code, name: employee.name, position: employee.position }, "employeesMgntsys");
             res.json({ token: accessToken, name: employee.name, code: employee.code, email: employee.email });
-
         });
+
+
+
 
     } catch (error) {
         console.log(error);
@@ -97,16 +101,25 @@ const restPassword = async (req, res) => {
 
     try {
         const code = req.params.code;
+        const password = req.body.password;
 
         const employee = await Employees.findOne({ where: { code } });
 
         if (!employee) {
             return res.json({ error: "User doesn't exist" })
         }
-        await Employees.update({ status: "INACTIVE", password: req.password }, { where: { code: code } });
-        res.json("Your password is changed but you need to confirm on you EMAIL");
-        const setLink = "Hi! <a href=" + "http://localhost:5000/employee/verify/" + code + ">Click here to verify</a>";
-        sendEmailHandler(setLink, employee.email);
+
+        bcrypt.hash(password, 10).then((hash) => {
+            Employees.update({
+                status: "INACTIVE",
+                password: hash
+            }, { where: { code: code } });
+            res.json("Your password is changed but you need to confirm on you EMAIL");
+            const setLink = "Hi! <a href=" + "http://localhost:5000/employee/verify/" + code + ">Click here to verify</a>";
+            sendEmailHandler(setLink, employee.email);
+        });
+        // await Employees.update({ status: "INACTIVE", password: password }, { where: { code: code } });
+
 
     } catch (error) {
         res.json(error);
