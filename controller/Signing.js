@@ -2,17 +2,8 @@ const { Employees } = require('../models');
 const bcrypt = require('bcryptjs');
 const { sign } = require('jsonwebtoken');
 const { check, validationResult } = require('express-validator');
-const uuid = require('uuid');
+const sendEmailHandler = require('../util/sendEmail')
 
-
-const getAll = async (req, res) => {
-    try {
-        const emp = await Employees.findAll();
-        res.json(emp);
-    } catch (error) {
-        console.log(error);
-    }
-};
 
 
 const createManager = async (req, res) => {
@@ -20,7 +11,6 @@ const createManager = async (req, res) => {
     if (!error.isEmpty()) {
         return res.json(error);
     }
-
     try {
 
         const employee = req.body;
@@ -43,22 +33,35 @@ const createManager = async (req, res) => {
             return res.json("Start from +250")
         }
 
+        let dateOne = new Date(new Date());
+        let dateTwo = new Date(req.body.birthDate);
+
+        let difference = dateOne.getFullYear() - dateTwo.getFullYear();
+        if (difference < 18) {
+            return res.json({ error: "You are too young you cannot be a manager" });
+        }
         if (employee.password !== employee.confPassword) {
             return res.json({ error: "Please re-write your password correctly" });
         }
+
+        const empCode = "EMP" + Math.floor(1000 + Math.random() * 9000).toString();
+
+        const setLink = "Hi! <a href=" + "http://localhost:5000/employee/verify/" + empCode + ">Click here to verify</a>";
+
         bcrypt.hash(employee.password, 10).then((hash) => {
             Employees.create({
-                code: "EMP" + Math.floor(1000 + Math.random() * 9000).toString(),
+                code: empCode,
                 name: employee.name,
                 nationalId: employee.nationalId,
                 phone: employee.phone,
                 email: employee.email,
                 birthDate: employee.birthDate,
-                status: employee.status,
+                status: "INACTIVE",
                 position: "MANAGER",
-                createDate: employee.createDate,
+                createDate: new Date(),
                 password: hash
             });
+            sendEmailHandler(setLink, employee.email);
             res.json({ message: "Saved successfully" });
         });
 
@@ -90,8 +93,29 @@ const managerLogin = async (req, res) => {
     }
 };
 
+const restPassword = async (req, res) => {
+
+    try {
+        const code = req.params.code;
+
+        const employee = await Employees.findOne({ where: { code } });
+
+        if (!employee) {
+            return res.json({ error: "User doesn't exist" })
+        }
+        await Employees.update({ status: "INACTIVE", password: req.password }, { where: { code: code } });
+        res.json("Your password is changed but you need to confirm on you EMAIL");
+        const setLink = "Hi! <a href=" + "http://localhost:5000/employee/verify/" + code + ">Click here to verify</a>";
+        sendEmailHandler(setLink, employee.email);
+
+    } catch (error) {
+        res.json(error);
+    }
+
+};
 
 
-exports.getAll = getAll;
+
 exports.createManager = createManager;
 exports.managerLogin = managerLogin;
+exports.restPassword = restPassword;
