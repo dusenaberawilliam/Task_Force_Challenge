@@ -35,6 +35,7 @@
         "phone": "+25078########",
         "email": "gmail.com",
         "birthDate": "date",
+        "status": "ACTIVE",
         "positon": "DESIGNER"
     },
     "To DELETE an employee set parmas": "EX: code = EMP0001",

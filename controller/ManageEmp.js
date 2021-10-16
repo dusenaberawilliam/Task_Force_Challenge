@@ -1,9 +1,8 @@
 const { Employees } = require('../models');
 const bcrypt = require('bcryptjs');
-const { sign } = require('jsonwebtoken');
 const { check, validationResult } = require('express-validator');
 const xlsx = require('xlsx');
-const fs = require('fs')
+
 
 const sendEmailHandler = require('../util/sendEmail')
 
@@ -11,7 +10,7 @@ const sendEmailHandler = require('../util/sendEmail')
 const getAllEmployee = async (req, res) => {
     try {
         const emps = await Employees.findAll({ attributes: { exclude: ['password'] } });
-        res.json(emps);
+        res.status(200).json(emps);
     } catch (error) {
         console.log(error);
     }
@@ -21,26 +20,26 @@ const getAllEmployee = async (req, res) => {
 const createEmployee = async (req, res) => {
     const error = validationResult(req);
     if (!error.isEmpty()) {
-        return res.json(error);
+        return res.status(400).json(error);
     }
     try {
         const employee = req.body;
 
         const existingEmail = await Employees.findOne({ where: { email: employee.email } });
         if (existingEmail) {
-            return res.json({ error: "User Email already used" });
+            return res.status(409).send({ error: "Employee Email already used" });
         }
         const existingPhone = await Employees.findOne({ where: { phone: employee.phone } });
         if (existingPhone) {
-            return res.json({ error: "User Phone number already used" });
+            return res.status(409).send({ error: "Employee Phone number already used" });
         }
         const existingN_ID = await Employees.findOne({ where: { nationalId: employee.nationalId } });
         if (existingN_ID) {
-            return res.json({ error: "User National ID number already used" });
+            return res.status(409).send({ error: "Employee National ID number already used" });
         }
         let regx = /^[+](250)?(\d{9})$/;
         if (!regx.test(employee.phone)) {
-            return res.json("Start from +250")
+            return res.status(406).send("Start from +250")
         }
 
         let dateOne = new Date(new Date());
@@ -48,14 +47,14 @@ const createEmployee = async (req, res) => {
 
         let difference = dateOne.getFullYear() - dateTwo.getFullYear();
         if (difference < 18) {
-            return res.json({ error: "You are too young you cannot be an employee" });
+            return res.status(406).send({ error: "You are too young you cannot be an employee" });
         }
         employee.code = "EMP" + Math.floor(1000 + Math.random() * 9000).toString();
         employee.createDate = new Date();
         await Employees.create(employee);
 
         sendEmailHandler("You joined Awesomity", employee.email);
-        res.json({ message: "Saved successfully" });
+        res.status(200).send({ message: "Saved successfully" });
 
 
     } catch (error) {
@@ -71,15 +70,15 @@ const updateStatus = async (req, res) => {
         const employee = await Employees.findOne({ where: { code } });
 
         if (!employee) {
-            return res.json({ error: "User doesn't exist" })
+            return res.status(400).send({ error: "Employee doesn't exist" })
         }
         if (employee.status === "INACTIVE") {
             await Employees.update({ status: "ACTIVE" }, { where: { code: code } });
-            res.json("Employee is now ACTIVE")
+            res.status(200).send("Employee is now ACTIVE")
         }
         if (employee.status === "ACTIVE") {
             await Employees.update({ status: "INACTIVE" }, { where: { code: code } });
-            res.json("Employee is now INACTIVE")
+            res.status(200).send("Employee is now INACTIVE")
         }
 
     } catch (error) {
@@ -87,7 +86,6 @@ const updateStatus = async (req, res) => {
     }
 
 };
-
 
 const updateSuspend = async (req, res) => {
 
@@ -97,11 +95,11 @@ const updateSuspend = async (req, res) => {
         const employee = await Employees.findOne({ where: { code } });
 
         if (!employee) {
-            return res.json({ error: "User doesn't exist" })
+            return res.status(404).send({ error: "Employee doesn't exist" })
         }
 
         await Employees.update({ status: "SUSPEND" }, { where: { code: code } });
-        res.json("Employee is now SUSPENDED")
+        res.status(200).send("Employee is now SUSPENDED")
 
     } catch (error) {
         res.json(error);
@@ -117,7 +115,7 @@ const updateEmployee = async (req, res) => {
         const emp = await Employees.findOne({ where: { code } });
 
         if (!emp) {
-            return res.json({ error: "User doesn't exist" })
+            return res.status(404).send({ error: "Employee doesn't exist" })
         }
         await Employees.update(
             {
@@ -126,30 +124,28 @@ const updateEmployee = async (req, res) => {
                 phone: employee.phone,
                 email: employee.email,
                 birthDate: employee.birthDate,
+                status: employee.status,
                 position: employee.position
 
             }, { where: { code: code } });
-        res.json("Employee data is UPDATED")
+        res.status(200).send("Employee data is UPDATED")
 
     } catch (error) {
         res.json(error);
     }
 };
 
-
-
 const deleteEmployee = async (req, res) => {
     try {
         const code = req.params.code;
 
         await Employees.destroy({ where: { code } });
-        res.json("User deleted");
+        res.status(200).send("Employee deleted");
 
     } catch (error) {
         console.log(error);
     }
 };
-
 
 const searchOneEmployee = async (req, res) => {
     try {
@@ -164,9 +160,9 @@ const searchOneEmployee = async (req, res) => {
                     { email: data },
                     { phone: data }
                 ]
-            }
+            }, attributes: { exclude: ['password'] }
         });
-        res.json(emps);
+        res.status(200).send(emps);
     } catch (error) {
         console.log(error);
     }
@@ -180,10 +176,10 @@ const activateViaEmail = async (req, res) => {
         const employee = await Employees.findOne({ where: { code } });
 
         if (!employee) {
-            return res.json({ error: "User doesn't exist" })
+            return res.status(404).send({ error: "Employee doesn't exist" })
         }
         await Employees.update({ status: "ACTIVE" }, { where: { code: code } });
-        res.send("after confirming your email now you are ACTIVED")
+        res.send("After confirming your email, now your request is ACCEPTED")
 
 
     } catch (error) {
@@ -208,19 +204,19 @@ const createEmployeeWithExcel = async (req, res) => {
 
             const existingEmail = await Employees.findOne({ where: { email: excelData[i].email } });
             if (existingEmail) {
-                return res.json({ error: "User Email already used" });
+                return res.status(409).send({ error: "Employee Email already used" });
             }
             const existingPhone = await Employees.findOne({ where: { phone: excelData[i].phone } });
             if (existingPhone) {
-                return res.json({ error: "User Phone number already used" });
+                return res.status(409).send({ error: "Employee Phone number already used" });
             }
             const existingN_ID = await Employees.findOne({ where: { nationalId: excelData[i].nationalId } });
             if (existingN_ID) {
-                return res.json({ error: "User National ID number already used" });
+                return res.status(409).send({ error: "Employee National ID number already used" });
             }
             let regx = /^(250)?(\d{9})$/;
             if (!regx.test(excelData[i].phone)) {
-                return res.json("Start from +250")
+                return res.status(406).send("Start from +250")
             }
 
             let dateOne = new Date(new Date());
@@ -228,14 +224,14 @@ const createEmployeeWithExcel = async (req, res) => {
 
             let difference = dateOne.getFullYear() - dateTwo.getFullYear();
             if (difference < 18) {
-                return res.json({ error: "You are too young you cannot be an employee" });
+                return res.status(406).send({ error: "You are too young you cannot be an employee" });
             }
             excelData[i].code = "EMP" + Math.floor(1000 + Math.random() * 9000).toString();
             excelData[i].createDate = new Date();
             await Employees.create(excelData[i]);
 
             sendEmailHandler("You joined Awesomity", excelData[i].email);
-            res.json({ message: "Saved successfully" });
+            res.status(200).send({ message: "Saved successfully" });
 
         }
     } catch (error) {

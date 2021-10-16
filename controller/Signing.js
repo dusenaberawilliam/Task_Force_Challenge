@@ -9,7 +9,7 @@ const sendEmailHandler = require('../util/sendEmail')
 const createManager = async (req, res) => {
     const error = validationResult(req);
     if (!error.isEmpty()) {
-        return res.json(error);
+        return res.status(400).send(error);
     }
     try {
 
@@ -17,20 +17,20 @@ const createManager = async (req, res) => {
 
         const existingEmail = await Employees.findOne({ where: { email: employee.email } });
         if (existingEmail) {
-            return res.json({ error: "User Email already used" });
+            return res.status(409).send({ error: "Email already used" });
         }
         const existingPhone = await Employees.findOne({ where: { phone: employee.phone } });
         if (existingPhone) {
-            return res.json({ error: "User Phone number already used" });
+            return res.status(409).send({ error: "Phone number already used" });
         }
         const existingN_ID = await Employees.findOne({ where: { nationalId: employee.nationalId } });
         if (existingN_ID) {
-            return res.json({ error: "User National ID number already used" });
+            return res.status(409).send({ error: "National ID number already used" });
         }
 
         let regx = /^[+](250)?(\d{9})$/;
         if (!regx.test(employee.phone)) {
-            return res.json("Start from +250")
+            return res.status(406).send("Start from +250")
         }
 
         let dateOne = new Date(new Date());
@@ -38,15 +38,15 @@ const createManager = async (req, res) => {
 
         let difference = dateOne.getFullYear() - dateTwo.getFullYear();
         if (difference < 18) {
-            return res.json({ error: "You are too young you cannot be a manager" });
+            return res.status(406).send({ error: "You are too young you cannot be a manager" });
         }
         if (employee.password !== employee.confPassword) {
-            return res.json({ error: "Please re-write your password correctly" });
+            return res.status(409).send({ error: "Please re-write your password correctly" });
         }
 
         const empCode = "EMP" + Math.floor(1000 + Math.random() * 9000).toString();
 
-        const setLink = "Hi! <a href=" + "http://localhost:5000/employee/verify/" + empCode + ">Click here to verify</a>";
+        const setLink = "Hi! <a href=" + "http://localhost:5000/api/employee/verify/" + empCode + ">Click here to verify</a>";
 
         bcrypt.hash(employee.password, 10).then((hash) => {
             Employees.create({
@@ -62,7 +62,7 @@ const createManager = async (req, res) => {
                 password: hash
             });
             sendEmailHandler(setLink, employee.email);
-            res.json({ message: "Saved successfully" });
+            res.status(200).send({ message: "Saved successfully" });
         });
 
     } catch (error) {
@@ -76,10 +76,10 @@ const managerLogin = async (req, res) => {
         const { email, password } = req.body;
         const employee = await Employees.findOne({ where: { email } });
         if (!employee) {
-            return res.json({ error: "user doesn't exist" });
+            return res.status(404).send({ error: "user doesn't exist" });
         }
         if (employee.status !== "ACTIVE") {
-            return res.json({ error: "Your account is not ACTIVE you did CONFIRM ON YOUR EMAIL" });
+            return res.status(406).send({ error: "Your account is not ACTIVE you didn't CONFIRM ON YOUR EMAIL" });
         }
         bcrypt.compare(password, employee.password).then((match) => {
             if (!match) {
@@ -103,7 +103,7 @@ const restPassword = async (req, res) => {
         const employee = await Employees.findOne({ where: { code } });
 
         if (!employee) {
-            return res.json({ error: "User doesn't exist" })
+            return res.status(404).send({ error: "User doesn't exist" })
         }
 
         bcrypt.hash(password, 10).then((hash) => {
@@ -112,10 +112,9 @@ const restPassword = async (req, res) => {
                 password: hash
             }, { where: { code: code } });
             res.json("Your password is changed but you need to confirm on you EMAIL");
-            const setLink = "Hi! <a href=" + "http://localhost:5000/employee/verify/" + code + ">Click here to verify</a>";
+            const setLink = "Hi! <a href=" + "http://localhost:5000/api/employee/verify/" + code + ">Click here to verify</a>";
             sendEmailHandler(setLink, employee.email);
         });
-        // await Employees.update({ status: "INACTIVE", password: password }, { where: { code: code } });
 
 
     } catch (error) {
