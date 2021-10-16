@@ -1,0 +1,45 @@
+{
+    "The following data is used for manager to sign up": {
+        "name": "String EX: William",
+        "nationalId": "#################",
+        "phone": "+25078########",
+        "email": "gmail.com",
+        "birthDate": "date",
+        "password": "String",
+        "confPassword": "String"
+    },
+    "This is used for manager log in": {
+        "email": "gmail.com",
+        "password": "String"
+    },
+    "This is used for resting password and after go to email to confirm": {
+        "password": "String",
+        "confPassword": "String"
+    },
+    "The following data is used to create or insert an employee": {
+        "name": "String EX: William",
+        "nationalId": "#################",
+        "phone": "+25078########",
+        "email": "gmail.com",
+        "birthDate": "date",
+        "status": "ACTIVE or INACTIVE",
+        "position": "DEVELOPER or DESIGNER or MANAGER...",
+        "password": "String",
+        "confPassword": "String"
+    },
+    "To update or edit status of employee just set params": " Ex: code = EMP0001",
+    "To SUSPEND an employee just specify the params": "EX: code = EMP0001",
+    "Just use the following data to update or edit an data about employee": {
+        "name": "String EX: William",
+        "nationalId": "#################",
+        "phone": "+25078########",
+        "email": "gmail.com",
+        "birthDate": "date",
+        "positon": "DESIGNER"
+    },
+    "To DELETE an employee set parmas": "EX: code = EMP0001",
+    "To search employee use either CODE, NAME, POSITION, EMAIL or PHONE where params can be one of them": "EX: data = email,phone,code,...",
+    " Specify the url of excel file to save the file as shown bellow with example below": {
+        "excelLink": "C:/Users/William/Documents/Book.xlsx"
+    }
+}
