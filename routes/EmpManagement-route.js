@@ -8,6 +8,7 @@ const signingController = require('../controller/Signing')
 const manageEmployee = require('../controller/ManageEmp');
 
 
+
 router.post('/',
     [
         check('name', 'the name is required').exists().isString().withMessage('Name can only contain letters & numbers'),
@@ -40,6 +41,7 @@ router.put('/employee/update/:code', validateToken, manageEmployee.updateEmploye
 router.delete('/employee/:code', validateToken, manageEmployee.deleteEmployee);
 router.get('/employee/search/:data', validateToken, manageEmployee.searchOneEmployee)
 router.get('/employee/verify/:code', manageEmployee.activateViaEmail);
+router.post('/employee/importfromexcel', manageEmployee.createEmployeeWithExcel);
 
 
 

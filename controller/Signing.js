@@ -89,9 +89,6 @@ const managerLogin = async (req, res) => {
             res.json({ token: accessToken, name: employee.name, code: employee.code, email: employee.email });
         });
 
-
-
-
     } catch (error) {
         console.log(error);
     }

@@ -12,24 +12,13 @@ const sendEmail = async (setLink, email) => {
     },
   });
 
-
   //Step 2
-
-  // mailOptions = {
-  //   from: process.env.EMAIL,
-  //   to: email,
-  //   subject: "Employee message",
-  //   text: setLink,
-  // };
-
   mailOptions = {
     from: process.env.EMAIL,
     to: email,
     subject: "Employee message",
     html: setLink
   };
-
-
 
   //Step 3
   await transporter.sendMail(mailOptions, function (err, data) {
